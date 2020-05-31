@@ -1,7 +1,13 @@
+#
+# please configure aws cli before using this program
+#
+
 import boto3, sys, traceback
 
 s3 = boto3.client('s3')
 with open('invoice.txt', 'wb') as f:
+    # param 1 is the bucket name great-learning-invoices-customer-bucket-kusu
+    # param2 is the file inside a folder : invoices folder and docproc-invoice.txt
     s3.download_fileobj('great-learning-invoices-customer-bucket-kusu', 'invoices/docproc-invoice.txt', f)
 
 #TBD Need to conver the invoice to a CSV, care -> the data can have comma
