@@ -1,14 +1,47 @@
 #
 # please configure aws cli before using this program
 #
+import os, traceback, sys
+from bottle import Bottle, request, post, response, static_file, run
+from os import path
+import json
+import boto3
 
-import boto3, sys, traceback
-
+listeningPort = "9098"
+app = Bottle()
 s3 = boto3.client('s3')
-with open('invoice.txt', 'wb') as f:
-    # param 1 is the bucket name great-learning-invoices-customer-bucket-kusu
-    # param2 is the file inside a folder : invoices folder and docproc-invoice.txt
-    s3.download_fileobj('great-learning-invoices-customer-bucket-kusu', 'invoices/docproc-invoice.txt', f)
+def readFileFromSrcS3Bucket():
+    with open('invoice.txt', 'wb') as f:
+        # param 1 is the bucket name great-learning-invoices-customer-bucket-kusu
+        # param2 is the file inside a folder : invoices folder and docproc-invoice.txt
+        s3.download_fileobj('great-learning-invoices-customer-bucket-kusu', 'invoices/docproc-invoice.txt', f)
+        #Initialize to some default values which should be overwritten by the values from the invoice file
+        cust_id = 'def'
+        inv_id = 'def_001'
+        line = ''
+        #The below logic is needed because the content object returns 1 char at a time
+        with open('invoice.txt', 'r', encoding='utf-8') as content: # wb means write binary data
+            for currLine in content:
+                for ch in currLine:
+                    if ch == '\n':
+                        print ('Line-> '+line)
+                        if "Customer-ID:" in line:
+                            cust_id = line.split(':')[1].strip()
+                            print ('  Found Customer-ID '+ cust_id)
+                        elif "Inv-ID:" in line:
+                            inv_id = line.split(':')[1].strip()
+                            print ('  Found Invoice-ID '+ inv_id)
+                        line = ''
+                    else:
+                        line += ch
+
+
+        #Insert to dynamo and push to kinesis stream
+        try:
+            parse_content =transform_content(cust_id, inv_id)
+            print ('CSV ->'+ parse_content)
+        except:
+            print(traceback.format_exc())
 
 #TBD Need to conver the invoice to a CSV, care -> the data can have comma
 def transform_content(cust_id, inv_id):
@@ -53,33 +86,12 @@ def transform_content(cust_id, inv_id):
 
 #obj = s3.Object('great-learning-invoices-customer-bucket-kusu', 'invoices/docproc-invoice.txt')
 
-#Initialize to some default values which should be overwritten by the values from the invoice file
-cust_id = 'def'
-inv_id = 'def_001'
-line = ''
-#The below logic is needed because the content object returns 1 char at a time
-with open('invoice.txt', 'r', encoding='utf-8') as content: # wb means write binary data
-    for currLine in content:
-        for ch in currLine:
-            if ch == '\n':
-                print ('Line-> '+line)
-                if "Customer-ID:" in line:
-                    cust_id = line.split(':')[1].strip()
-                    print ('  Found Customer-ID '+ cust_id)
-                elif "Inv-ID:" in line:
-                    inv_id = line.split(':')[1].strip()
-                    print ('  Found Invoice-ID '+ inv_id)
-                line = ''
-            else:
-                line += ch
 
 
-#Insert to dynamo and push to kinesis stream
-try:
-   parse_content =transform_content(cust_id, inv_id)
-   print ('CSV ->'+ parse_content)
-except:
-     print(traceback.format_exc())
+
+if __name__ == '__main__':
+    port = int(os.environ.get('PORT', listeningPort))
+    run(app,host="127.0.0.1", port=port, debug=True)
     
 
 
