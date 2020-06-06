@@ -12,11 +12,13 @@ app = Bottle()
 s3 = boto3.client('s3')
 
 # This method reads the data from S3 bucket
-def readFileFromSrcS3Bucket():
+def readFileFromSrcS3Bucket(bucket,filename):
     with open('invoice.txt', 'wb') as f:
         # param 1 is the bucket name great-learning-invoices-customer-bucket-kusu
         # param2 is the file inside a folder : invoices folder and docproc-invoice.txt
-        s3.download_fileobj('great-learning-invoices-customer-bucket-kusu', 'invoices/docproc-invoice.txt', f)
+        print('bucketName='+bucket)
+        print('fileName='+filename)
+        #s3.download_fileobj('great-learning-invoices-customer-bucket-kusu', 'invoices/docproc-invoice.txt', f)
         #Initialize to some default values which should be overwritten by the values from the invoice file
         cust_id = 'def'
         inv_id = 'def_001'
@@ -92,13 +94,35 @@ def postJsonData():
     printRequestHeaders(request)
     #comments = request.json    # use this when content-type is application/json set by client
     json_response = json.load(request.body) # this is for content-type application
-    print(json_response['Message'])
+    if (json_response != None):
+       sns_message_header = json_response['x-amz-sns-message-type']
+       if (sns_message_header == None):
+           raise Exception('SNS message Type Header not found in the POST request')
+       if (sns_message_header == 'SubscriptionConfirmation'):
+           print('This is an SNS subscription message, we need to get the SubscribeURL  from the body')
+           print('SubscribeURL:::::::::'+json_response['SubscribeURL'])
+       elif (sns_message_header == 'Notification'):
+           print('This is an SNS Notification message')
+           bucket = json_response['Records'][0]['s3']['bucket']['name']
+           filename = json_response['Records'][0]['s3']['object']['key']
+           print ('Will read the file %s from the bucket %s',filename, bucket)
+           readFileFromSrcS3BucketTest(bucket,filename)
+       elif (sns_message_header == 'UnsubscribeConfirmation'):
+           print('This is an SNS unsubscription message')
 
+           
+    
+       return 'API invoked; your http record is now saved.'
+    else:
+        return 'No data found in the POST body'
 
 # this method prints all the headers in the request
 def printRequestHeaders(request):
     print(dict(request.headers))    
 
+def readFileFromSrcS3BucketTest(bucket, fileName):
+    print('bucketName='+bucket)
+    print('fileName='+fileName)
 
 
 if __name__ == '__main__':
