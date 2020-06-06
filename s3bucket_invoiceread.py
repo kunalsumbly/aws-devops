@@ -95,7 +95,7 @@ def postJsonData():
     #comments = request.json    # use this when content-type is application/json set by client
     json_response = json.load(request.body) # this is for content-type application
     if (json_response != None):
-       sns_message_header = json_response['x-amz-sns-message-type']
+       sns_message_header = json_response['X-Amz-Sns-Message-Type']
        if (sns_message_header == None):
            raise Exception('SNS message Type Header not found in the POST request')
        if (sns_message_header == 'SubscriptionConfirmation'):
