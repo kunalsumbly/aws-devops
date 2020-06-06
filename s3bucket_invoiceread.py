@@ -10,6 +10,8 @@ import boto3
 listeningPort = "9098"
 app = Bottle()
 s3 = boto3.client('s3')
+
+# This method reads the data from S3 bucket
 def readFileFromSrcS3Bucket():
     with open('invoice.txt', 'wb') as f:
         # param 1 is the bucket name great-learning-invoices-customer-bucket-kusu
@@ -84,8 +86,18 @@ def transform_content(cust_id, inv_id):
 
     return cust_id + "," + inv_id + "," + dated + "," + fromcust + "," + tocust + "," + amt + "," + sgst + "," + tot + "," + words
 
-#obj = s3.Object('great-learning-invoices-customer-bucket-kusu', 'invoices/docproc-invoice.txt')
+# this method is called when any request is posted to /sns endpoint
+@app.route('/sns', method=['POST'])
+def postJsonData():
+    printRequestHeaders(request)
+    #comments = request.json    # use this when content-type is application/json set by client
+    json_response = json.load(request.body) # this is for content-type application
+    print(json_response['Message'])
 
+
+# this method prints all the headers in the request
+def printRequestHeaders(request):
+    print(dict(request.headers))    
 
 
 
