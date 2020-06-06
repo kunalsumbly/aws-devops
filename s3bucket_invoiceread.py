@@ -21,32 +21,32 @@ def readFileFromSrcS3Bucket(bucket,filename):
         #s3.download_fileobj('great-learning-invoices-customer-bucket-kusu', 'invoices/docproc-invoice.txt', f)
         s3.download_fileobj(bucket, filename, f) # needs aws cli
         #Initialize to some default values which should be overwritten by the values from the invoice file
-        cust_id = 'def'
-        inv_id = 'def_001'
-        line = ''
-        #The below logic is needed because the content object returns 1 char at a time
-        with open('invoice.txt', 'r', encoding='utf-8') as content: # wb means write binary data
-            for currLine in content:
-                for ch in currLine:
-                    if ch == '\n':
-                        print ('Line-> '+line)
-                        if "Customer-ID:" in line:
-                            cust_id = line.split(':')[1].strip()
-                            print ('  Found Customer-ID '+ cust_id)
-                        elif "Inv-ID:" in line:
-                            inv_id = line.split(':')[1].strip()
-                            print ('  Found Invoice-ID '+ inv_id)
-                        line = ''
-                    else:
-                        line += ch
+    cust_id = 'def'
+    inv_id = 'def_001'
+    line = ''
+    #The below logic is needed because the content object returns 1 char at a time
+    with open('invoice.txt', 'r', encoding='utf-8') as content: # wb means write binary data
+        for currLine in content:
+            for ch in currLine:
+                if ch == '\n':
+                    print ('Line-> '+line)
+                    if "Customer-ID:" in line:
+                        cust_id = line.split(':')[1].strip()
+                        print ('  Found Customer-ID '+ cust_id)
+                    elif "Inv-ID:" in line:
+                        inv_id = line.split(':')[1].strip()
+                        print ('  Found Invoice-ID '+ inv_id)
+                    line = ''
+                else:
+                    line += ch
 
 
-        #Insert to dynamo and push to kinesis stream
-        try:
-            parse_content =transform_content(cust_id, inv_id)
-            print ('CSV ->'+ parse_content)
-        except:
-            print(traceback.format_exc())
+    #Insert to dynamo and push to kinesis stream
+    try:
+        parse_content =transform_content(cust_id, inv_id)
+        print ('CSV ->'+ parse_content)
+    except:
+        print(traceback.format_exc())
 
 #TBD Need to conver the invoice to a CSV, care -> the data can have comma
 def transform_content(cust_id, inv_id):
