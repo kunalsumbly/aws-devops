@@ -19,6 +19,7 @@ def readFileFromSrcS3Bucket(bucket,filename):
         print('bucketName='+bucket)
         print('fileName='+filename)
         #s3.download_fileobj('great-learning-invoices-customer-bucket-kusu', 'invoices/docproc-invoice.txt', f)
+        s3.download_fileobj(bucket, filename, f) # needs aws cli
         #Initialize to some default values which should be overwritten by the values from the invoice file
         cust_id = 'def'
         inv_id = 'def_001'
@@ -109,7 +110,7 @@ def postJsonData():
         bucket = json_response_message_body['Records'][0]['s3']['bucket']['name']
         filename = json_response_message_body['Records'][0]['s3']['object']['key']
         print ('Will read the file %s from the bucket %s',filename, bucket)
-        readFileFromSrcS3BucketTest(bucket,filename)
+        readFileFromSrcS3Bucket(bucket,filename)
     elif (sns_message_type_header == 'UnsubscribeConfirmation'):
         print('This is an SNS unsubscription message')
     
@@ -118,10 +119,6 @@ def postJsonData():
 # this method prints all the headers in the request
 def printRequestHeaders(request):
     print(dict(request.headers))    
-
-def readFileFromSrcS3BucketTest(bucket, fileName):
-    print('bucketName='+bucket)
-    print('fileName='+fileName)
 
 
 if __name__ == '__main__':
