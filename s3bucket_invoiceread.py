@@ -97,20 +97,20 @@ def postJsonData():
     if (json_response_message_body == None):
       return 'No data found in the POST body'
     
-    sns_message_request_header = request['X-Amz-Sns-Message-Type']
+    sns_message_type_header = dict(request.headers)['X-Amz-Sns-Message-Type']
     
-    if (sns_message_request_header == None):
+    if (sns_message_type_header == None):
         raise Exception('SNS message Type Header not found in the POST request')
-    if (sns_message_request_header == 'SubscriptionConfirmation'):
+    if (sns_message_type_header == 'SubscriptionConfirmation'):
         print('This is an SNS subscription message, we need to get the SubscribeURL  from the body')
         print('SubscribeURL:::::::::'+json_response_message_body['SubscribeURL'])
-    elif (sns_message_request_header == 'Notification'):
+    elif (sns_message_type_header == 'Notification'):
         print('This is an SNS Notification message')
         bucket = json_response_message_body['Records'][0]['s3']['bucket']['name']
         filename = json_response_message_body['Records'][0]['s3']['object']['key']
         print ('Will read the file %s from the bucket %s',filename, bucket)
         readFileFromSrcS3BucketTest(bucket,filename)
-    elif (sns_message_request_header == 'UnsubscribeConfirmation'):
+    elif (sns_message_type_header == 'UnsubscribeConfirmation'):
         print('This is an SNS unsubscription message')
     
     return 'API invoked; your http record is now saved.'
