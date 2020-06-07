@@ -12,7 +12,7 @@ listeningPort = "9098"
 app = Bottle()
 s3 = boto3.client('s3')
 s3_target_bucket = 'great-learning-athena-target-bucket-kusu'
-dynamodb = boto3.client('dynamodb')
+dynamodb = boto3.client('dynamodb','us-east-1')
 
 # This method reads the data from S3 bucket
 def readFileFromSrcS3Bucket(bucket,filename):
