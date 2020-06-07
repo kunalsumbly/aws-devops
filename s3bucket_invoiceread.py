@@ -6,10 +6,13 @@ from bottle import Bottle, request, post, response, static_file, run
 from os import path
 import json
 import boto3
+import datetime
 
 listeningPort = "9098"
 app = Bottle()
 s3 = boto3.client('s3')
+s3_target_bucket = 'great-learning-athena-target-bucket-kusu'
+dynamodb = boto3.client('dynamodb')
 
 # This method reads the data from S3 bucket
 def readFileFromSrcS3Bucket(bucket,filename):
@@ -45,6 +48,8 @@ def readFileFromSrcS3Bucket(bucket,filename):
     try:
         parse_content =transform_content(cust_id, inv_id)
         print ('CSV ->'+ parse_content)
+        insert_dynamodb(cust_id, inv_id, content, parse_content)
+        write_to_target_bucket(cust_id, inv_id, content, parse_content)
     except:
         print(traceback.format_exc())
 
@@ -111,6 +116,7 @@ def postJsonData():
         filename = json_response_message_body['Records'][0]['s3']['object']['key']
         print ('Will read the file %s from the bucket %s',filename, bucket)
         readFileFromSrcS3Bucket(bucket,filename)
+
     elif (sns_message_type_header == 'UnsubscribeConfirmation'):
         print('This is an SNS unsubscription message')
     
@@ -119,6 +125,62 @@ def postJsonData():
 # this method prints all the headers in the request
 def printRequestHeaders(request):
     print(dict(request.headers))    
+
+
+def write_to_target_bucket(cust_id, inv_id, content, xform_content):
+    now = datetime.datetime.now()
+    prefix_val = str(now.microsecond) + str(now.second)
+    object_key = prefix_val + '_' + cust_id + '_' + inv_id + '.csv'
+    print ("Written new s3 file"+object_key)
+    print ("Uploading S3 object content"+xform_content)
+    s3 = boto3.client('s3')
+    s3.put_object(Bucket=s3_target_bucket, Key=object_key, Body=xform_content.encode())
+    print ("Done")
+
+def create_table():
+    print ('\n*************************************************************************')
+    print ('Creating table invoice')
+    
+    try:
+        dynamodb.create_table(
+                        TableName='invoice',
+                        KeySchema=[
+                            { 'AttributeName': 'cust_id', 'KeyType': 'HASH' }, # partition key
+                            { 'AttributeName': 'inv_id', 'KeyType': 'RANGE' } # sort key
+                        ],
+                        AttributeDefinitions=[
+                            { 'AttributeName': 'cust_id', 'AttributeType': 'S' },
+                            { 'AttributeName': 'inv_id', 'AttributeType': 'S' }
+                        ],
+                        # Planning for capacity units
+                        ProvisionedThroughput={ 'ReadCapacityUnits': 1, 'WriteCapacityUnits': 1 }
+                ) 
+
+        # Wait until the table exists.
+        dynamodb.get_waiter('table_exists').wait(TableName='invoice')
+        print (' Table Creation DONE')
+
+    except Exception as e:
+        print(e)
+
+def insert_data(cust_id, inv_id, content, xform_content):
+    print('**********Insert Started********')
+    dynamodb.put_item(
+        TableName='invoice',
+        Item={
+                "cust_id": {"S": cust_id},
+                "inv_id": {"S":inv_id},
+                "details": {"S":content},
+                "csvdtls": {"S":xform_content}
+            }
+        )
+    print('**********Insert Done************')
+
+
+def insert_dynamodb(cust_id, inv_id, content, xform_content):
+    create_table()
+    insert_data(cust_id, inv_id, content, xform_content)
+
 
 
 if __name__ == '__main__':
