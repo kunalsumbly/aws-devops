@@ -48,8 +48,8 @@ def readFileFromSrcS3Bucket(bucket,filename):
     try:
         parse_content =transform_content(cust_id, inv_id)
         print ('CSV ->'+ parse_content)
-        insert_dynamodb(cust_id, inv_id, content, parse_content)
-        write_to_target_bucket(cust_id, inv_id, content, parse_content)
+        insert_dynamodb(cust_id, inv_id, line, parse_content)
+        write_to_target_bucket(cust_id, inv_id, line, parse_content)
     except:
         print(traceback.format_exc())
 
