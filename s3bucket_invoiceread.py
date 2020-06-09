@@ -13,6 +13,8 @@ app = Bottle()
 s3 = boto3.client('s3')
 s3_target_bucket = 'great-learning-athena-target-bucket-kusu'
 dynamodb = boto3.client('dynamodb','us-east-1')
+s3_src_bucket = 'great-learning-invoices-customer-bucket-kusu'
+s3_src_bucket_filename='invoices/docproc-invoice.txt'
 
 # This method reads the data from S3 bucket
 def readFileFromSrcS3Bucket(bucket,filename):
@@ -27,10 +29,12 @@ def readFileFromSrcS3Bucket(bucket,filename):
     cust_id = 'def'
     inv_id = 'def_001'
     line = ''
+    file_content = ''
     #The below logic is needed because the content object returns 1 char at a time
     with open('invoice.txt', 'r', encoding='utf-8') as content: # wb means write binary data
         for currLine in content:
             for ch in currLine:
+                file_content+=ch
                 if ch == '\n':
                     print ('Line-> '+line)
                     if "Customer-ID:" in line:
@@ -42,14 +46,14 @@ def readFileFromSrcS3Bucket(bucket,filename):
                     line = ''
                 else:
                     line += ch
-
+                    
 
     #Insert to dynamo and push to kinesis stream
     try:
         parse_content =transform_content(cust_id, inv_id)
         print ('CSV ->'+ parse_content)
-        insert_dynamodb(cust_id, inv_id, line, parse_content)
-        write_to_target_bucket(cust_id, inv_id, line, parse_content)
+        insert_dynamodb(cust_id, inv_id, file_content, parse_content)
+        write_to_target_bucket(cust_id, inv_id, parse_content)
     except:
         print(traceback.format_exc())
 
@@ -127,7 +131,7 @@ def printRequestHeaders(request):
     print(dict(request.headers))    
 
 
-def write_to_target_bucket(cust_id, inv_id, content, xform_content):
+def write_to_target_bucket(cust_id, inv_id,  xform_content):
     now = datetime.datetime.now()
     prefix_val = str(now.microsecond) + str(now.second)
     object_key = prefix_val + '_' + cust_id + '_' + inv_id + '.csv'
