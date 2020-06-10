@@ -13,7 +13,7 @@ app = Bottle()
 s3 = boto3.client('s3')
 s3_target_bucket = 'great-learning-athena-target-bucket-kusu'
 dynamodb = boto3.client('dynamodb','us-east-1')
-s3_src_bucket = 'great-learning-invoices-customer-bucket-kusu'
+s3_src_bucket = 'great-learning-invoices-upload-bucket-kusu'
 s3_src_bucket_filename='invoices/docproc-invoice.txt'
 
 # This method reads the data from S3 bucket
