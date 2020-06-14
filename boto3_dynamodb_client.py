@@ -3,7 +3,7 @@ from botocore.exceptions import ClientError
 from boto3.dynamodb.conditions import Key, Attr
 import s3bucket_invoiceread
 
-dynamodb = boto3.client('dynamodb')
+dynamodb = boto3.client('dynamodb','us-east-1')
 
 def create_table():
     print ('\n*************************************************************************')
@@ -44,8 +44,8 @@ def create_table():
 
 
 
-s3bucket_invoiceread.readFileFromSrcS3Bucket(s3bucket_invoiceread.s3_src_bucket,s3bucket_invoiceread.s3_src_bucket_filename)
-#create_table()
+#s3bucket_invoiceread.readFileFromSrcS3Bucket(s3bucket_invoiceread.s3_src_bucket,s3bucket_invoiceread.s3_src_bucket_filename)
+create_table()
  
 
 
