@@ -1,7 +1,7 @@
 import boto3
 from botocore.exceptions import ClientError
 from boto3.dynamodb.conditions import Key, Attr
-import s3bucket_invoiceread
+#import s3bucket_invoiceread
 
 dynamodb = boto3.client('dynamodb','us-east-1')
 
